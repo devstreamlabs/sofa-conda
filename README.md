@@ -25,3 +25,21 @@ conda-forge/sofa-beamadapter-feedstock#1 merge. After that, use conda-forge alon
 
 To add a package: copy the `.conda` file into its platform directory, run
 `pixi exec rattler-index fs .` at the root, and commit.
+
+## Building the packages
+
+Build each feedstock config with `scripts/build-feedstock.sh`, never by running the feedstock's
+`.scripts/run_osx_build.sh` with `CI` set:
+
+    scripts/build-feedstock.sh <feedstock-checkout> osx_64_python3.14.____cp314
+
+With `CI` set, conda-forge's macOS script assumes a throwaway hosted runner and runs
+`sudo mangle_homebrew`, which moves everything in `/usr/local` into `/usr/local/conda_mangled`
+(on 2026-10-04 that took a shared build machine's service manager with it). The launcher builds
+with `CI` unset, keeps miniforge, the SDK and the output in a work dir, runs the macOS build in a
+sandbox that cannot write system paths, refuses to start on a shared builder if any of that would
+not hold, and fails if `/usr/local` or `/opt` changed. Windows builds have no such step: run
+`.scripts\run_win_build.bat` with `CI` unset.
+
+Tests: `tests/test_build_feedstock.sh` (no build, any OS); `SOFA_E2E=1 tests/e2e_macos_build.sh`
+for a real macOS build that checks the machine was left alone.
